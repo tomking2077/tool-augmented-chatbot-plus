@@ -275,7 +275,7 @@ def render_dual_chat_mode():
             type=["pdf"],
             accept_multiple_files=True,
             key="dual_chat_pdf_uploader",
-            label_visibility="visible",
+            label_visibility="collapsed",
         )
         if uploaded_files:
             st.caption(f"📎 {len(uploaded_files)} file(s) uploaded")

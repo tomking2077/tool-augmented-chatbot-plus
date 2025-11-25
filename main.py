@@ -21,10 +21,12 @@ if __name__ == "__main__":
     st.title("Tool Augmented Chatbot")
     
     # Dual-chat mode toggle
+    st.sidebar.markdown("Enable Dual Chat Mode  \n(FAISS vs Direct)")
     dual_chat_mode = st.sidebar.toggle(
-        "Enable Dual Chat Mode (FAISS vs Direct)",
+        "Enable Dual Chat Mode",
         value=st.session_state.dual_chat_mode,
         key="dual_chat_toggle",
+        label_visibility="collapsed",
     )
     st.session_state.dual_chat_mode = dual_chat_mode
     
@@ -93,6 +95,7 @@ if __name__ == "__main__":
                     label_visibility="collapsed",
                 )
                 handle_pdf_upload(uploaded_files, conversation, tab_name)
+
 
                 for idx, (role, msg) in enumerate(conversation["chat_history"]):
                     with st.chat_message(role):
