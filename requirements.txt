@@ -11,5 +11,7 @@ sentence-transformers>=3.0,<4.0
 # Cross-encoder for re-ranking (already included in sentence-transformers, but explicit for clarity)
 faiss-cpu>=1.13.0,<2.0
 pypdf>=5.1.0,<6.0
+duckduckgo-search>=6.2,<7.0
 typing-extensions>=4.14,<5.0
+ddgs>=9.9,<10.0
 pandas>=2.2,<3.0
