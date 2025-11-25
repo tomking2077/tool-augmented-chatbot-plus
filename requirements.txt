@@ -1,0 +1,20 @@
+streamlit==1.38.0
+python-dotenv==1.0.1
+langchain>=0.3,<0.4
+langchain-core>=0.3.3,<0.4
+langchain-community>=0.3,<0.4
+langgraph>=0.2,<0.3
+langchain-mcp-adapters>=0.1.13,<0.2
+langchain-google-genai>=2.0,<3.0
+langchain-text-splitters>=0.3,<0.4
+langchain-huggingface>=0.1,<0.2
+sentence-transformers>=3.0,<4.0
+# Cross-encoder for re-ranking (already included in sentence-transformers, but explicit for clarity)
+faiss-cpu>=1.13.0,<2.0
+pypdf>=5.1.0,<6.0
+duckduckgo-search>=6.2,<7.0
+google-generativeai>=0.8,<1.0
+typing-extensions>=4.14,<5.0
+ddgs>=9.9,<10.0
+pandas>=2.2,<3.0
+matplotlib>=3.7,<4.0
