@@ -6,7 +6,7 @@ import streamlit as st
 def render_dual_chat_debug(faiss_chat: dict, direct_chat: dict):
     """Render shared debug panel for dual-chat mode comparing FAISS vs Direct"""
     with st.expander("Debug & Token Usage Comparison", expanded=False):
-        st.caption("Token usage comparison: FAISS vs Direct")
+        st.caption("Cumulative token usage comparison: FAISS vs Direct")
         
         faiss_stats = faiss_chat.get("token_stats", [])
         direct_stats = direct_chat.get("token_stats", [])
@@ -30,9 +30,6 @@ def render_dual_chat_debug(faiss_chat: dict, direct_chat: dict):
                 direct_total_input = df[df["method"] == "Direct"]["input_tokens"].sum() if "Direct" in df["method"].values else 0
                 direct_total_output = df[df["method"] == "Direct"]["output_tokens"].sum() if "Direct" in df["method"].values else 0
                 direct_total_combined = direct_total_input + direct_total_output
-                
-                savings = max(direct_total_combined - faiss_total_combined, 0) if direct_total_combined > 0 else 0
-                percent_saved = (savings / direct_total_combined * 100) if direct_total_combined > 0 else 0
                 
                 # Create layout with chart on left, metrics on right
                 chart_col, metrics_col = st.columns([0.65, 0.35])
@@ -58,27 +55,46 @@ def render_dual_chat_debug(faiss_chat: dict, direct_chat: dict):
                         faiss_row = df[(df["interaction"] == i) & (df["method"] == "FAISS")]
                         direct_row = df[(df["interaction"] == i) & (df["method"] == "Direct")]
                         
+                        faiss_input = faiss_row["input_tokens"].iloc[0] if len(faiss_row) > 0 else 0
+                        faiss_output = faiss_row["output_tokens"].iloc[0] if len(faiss_row) > 0 else 0
+                        
+                        direct_input = direct_row["input_tokens"].iloc[0] if len(direct_row) > 0 else 0
+                        direct_output = direct_row["output_tokens"].iloc[0] if len(direct_row) > 0 else 0
+                        
                         chart_data.append({
                             "Interaction": i,
-                            "FAISS Input": faiss_row["input_tokens"].iloc[0] if len(faiss_row) > 0 else 0,
-                            "FAISS Output": faiss_row["output_tokens"].iloc[0] if len(faiss_row) > 0 else 0,
-                            "FAISS Total": faiss_row["total_tokens"].iloc[0] if len(faiss_row) > 0 else 0,
-                            "Direct Input": direct_row["input_tokens"].iloc[0] if len(direct_row) > 0 else 0,
-                            "Direct Output": direct_row["output_tokens"].iloc[0] if len(direct_row) > 0 else 0,
-                            "Direct Total": direct_row["total_tokens"].iloc[0] if len(direct_row) > 0 else 0,
+                            "FAISS Input": faiss_input,
+                            "FAISS Output": faiss_output,
+                            "FAISS Total": faiss_input + faiss_output,
+                            "Direct Input": direct_input,
+                            "Direct Output": direct_output,
+                            "Direct Total": direct_input + direct_output,
                         })
                     
                     chart_df = pd.DataFrame(chart_data).set_index("Interaction")
                     
-                    # Use st.line_chart to show all metrics
-                    # Color list matches the order of columns: FAISS Input, FAISS Output, FAISS Total, Direct Input, Direct Output, Direct Total
-                    # Green shades (medium-light to dark): FAISS Input, FAISS Output, FAISS Total
-                    # Red shades (medium-light to dark): Direct Input, Direct Output, Direct Total
-                    # Make graph 25% taller: 350 * 1.25 = 437.5, round to 438
+                    # Calculate cumulative sum for all columns to show total usage over time
+                    chart_df = chart_df.cumsum()
+                    
+                    # Extract totals from the last row of cumulative dataframe for consistency
+                    totals = chart_df.iloc[-1]
+                    faiss_total_input = totals["FAISS Input"]
+                    faiss_total_output = totals["FAISS Output"]
+                    faiss_total_combined = totals["FAISS Total"]
+                    
+                    direct_total_input = totals["Direct Input"]
+                    direct_total_output = totals["Direct Output"]
+                    direct_total_combined = totals["Direct Total"]
+                    
+                    savings = max(direct_total_combined - faiss_total_combined, 0) if direct_total_combined > 0 else 0
+                    percent_saved = (savings / direct_total_combined * 100) if direct_total_combined > 0 else 0
+                    # Color list matches the order of columns (alphabetical): Direct Input, Direct Output, Direct Total, FAISS Input, FAISS Output, FAISS Total
+                    # Red shades for Direct (medium-light to dark): #fcae91, #fb6a4a, #cb181d
+                    # Green shades for FAISS (medium-light to dark): #bae4b3, #74c476, #238b45
                     st.line_chart(
                         chart_df,
                         height=438,
-                        color=["#bae4b3", "#74c476", "#238b45", "#fcae91", "#fb6a4a", "#cb181d"]
+                        color=["#fcae91", "#fb6a4a", "#cb181d", "#bae4b3", "#74c476", "#238b45"]
                     )
                 
                 with metrics_col:
