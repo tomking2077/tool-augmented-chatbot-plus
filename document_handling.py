@@ -575,7 +575,8 @@ def _load_existing_indexes(uploaded_files, file_hashes, file_metadata, tab_name,
         st.session_state[toast_key] = shown_toasts
     
     # Update metadata with index hashes
-    updated_metadata = file_hashes.copy()
+    updated_metadata = file_metadata.copy() if file_metadata else {}
+    updated_metadata.update(file_hashes)
     for file_name, index_hash in index_hashes.items():
         updated_metadata[f"{file_name}_index_hash"] = index_hash
     return True, updated_metadata
@@ -620,12 +621,35 @@ def _filter_files_to_process(uploaded_files, file_contents: dict, conversation: 
 
 def handle_pdf_upload(uploaded_files, conversation: dict, tab_name: str):
     """Handle PDF upload and process based on FAISS setting with hybrid client/server storage"""
+    # Handle empty upload (clearing all files)
     if not uploaded_files:
+        if conversation.get("vectorstores") or conversation.get("direct_docs"):
+            conversation["vectorstores"] = {}
+            conversation["direct_docs"] = []
+            conversation["last_upload_signature"] = None
+            st.toast(f"🗑️ Cleared all documents from {tab_name}.", icon="🗑️")
         return
 
     # Step 1: Check filename
     current_file_names = frozenset(f.name for f in uploaded_files)
     faiss_enabled = conversation.get("faiss_enabled", True)
+
+    # Sync existing context with current uploads (remove cancelled/deleted files)
+    if faiss_enabled:
+        vectorstores = conversation.get("vectorstores", {})
+        # Create list to avoid runtime error during iteration
+        for file_name in list(vectorstores.keys()):
+            if file_name not in current_file_names:
+                del vectorstores[file_name]
+                # st.toast(f"Removed {file_name} from active context", icon="🗑️")
+    else:
+        direct_docs = conversation.get("direct_docs", [])
+        # Filter out docs that are not in current_file_names
+        conversation["direct_docs"] = [
+            doc for doc in direct_docs 
+            if doc.startswith("[") and doc.split("]")[0][1:] in current_file_names
+        ]
+
     current_signature = (current_file_names, faiss_enabled)
     metadata_key = f"{tab_name}_files"
     file_metadata = _get_file_metadata(metadata_key)
@@ -694,7 +718,8 @@ def handle_pdf_upload(uploaded_files, conversation: dict, tab_name: str):
             
             if all_loaded:
                 conversation["last_upload_signature"] = current_signature
-                updated_metadata = file_hashes.copy()
+                updated_metadata = file_metadata.copy() if file_metadata else {}
+                updated_metadata.update(file_hashes)
                 _update_file_metadata(metadata_key, updated_metadata)
                 st.toast(f"📄 Loaded {len(uploaded_files)} file(s) from disk. Ready to query!", icon="✅")
                 return

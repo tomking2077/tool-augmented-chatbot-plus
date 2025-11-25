@@ -78,7 +78,12 @@ if __name__ == "__main__":
                 tab_key = tab_name.replace(" ", "_")
                 st.subheader(tab_name)
                 status = "enabled" if conversation.get("faiss_enabled", True) else "disabled"
+                active_files = list(conversation.get("vectorstores", {}).keys()) if conversation.get("faiss_enabled", True) else [d.split("]")[0][1:] for d in conversation.get("direct_docs", []) if doc.startswith("[") and "]" in doc]
                 st.caption(f"FAISS retrieval is currently **{status}** for this chat.")
+                if active_files:
+                    st.caption(f"📚 Active files in context: {', '.join(active_files)}")
+                else:
+                    st.caption("📚 No files in context")
 
                 uploaded_files = st.file_uploader(
                     "Upload PDF files",
